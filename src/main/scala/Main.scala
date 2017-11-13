@@ -2,9 +2,7 @@
   * Created by inoquea on 13.11.17.
   */
 import model._
-import slick.dbio.Effect.Schema
 import slick.jdbc.PostgresProfile.api._
-import slick.sql.FixedSqlAction
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,4 +38,16 @@ object Main extends App{
     for (i <- dataLists.passInTripListForCreate) {
       Await.result(passInTripRepository.create((PassInTrip.apply _).tupled(i)), Duration.Inf)}
   }
+  def exec[T](action: DBIO[T]): T =
+    Await.result(db.run(action), 2.seconds)
+
+  select1()
+  def select1():Unit = {
+    val query  = PassInTripTable.table.join(PassengerTable.table).on(_.passId === _.id).
+      groupBy{case (pit, p) => (pit.place, pit.passId, p.name)}.
+      map{case ((place, passId, name), group) => (group.size, name)}.
+      filter(p => p._1 >1).map(_._2).result
+    exec(query).foreach(println)
+  }
+
 }
