@@ -17,7 +17,7 @@ case class Trip (id: Option[Int],
                  timeOut: Date
                 )
 class TripTable(tag:Tag) extends Table[Trip](tag, "trips"){
-  val id = column[Int]("trip_no", O.PrimaryKey, O.AutoInc)
+  val id = column[Int]("trip_no", O.PrimaryKey)
   val companyId= column[ Int]("ID_comp")
   val plane = column[String]("plane")
   val townFrom= column[ String]("town_from")

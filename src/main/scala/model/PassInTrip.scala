@@ -8,17 +8,17 @@ import scala.concurrent.Future
 /**
   * Created by inoquea on 13.11.17.
   */
-case class PassInTrip(tripId: Int, passId : Int, date: Date, place: String)
+case class PassInTrip(tripId: Int,  date: Date, passId : Int, place: String)
 
 class PassInTripTable(tag:Tag) extends Table[PassInTrip](tag, "pass_in_trip"){
   val tripId = column[Int]("trip_no")
-  val passId = column[Int]("id_psg")
   val date = column[Date]("[date]")
+  val passId = column[Int]("id_psg")
   val place = column[String]("place")
   val trip_id_fk = foreignKey("trip_no_fk", tripId, TableQuery[TripTable])(_.id)
   val pass_id_fk = foreignKey("id_psg_fk", passId, TableQuery[PassengerTable])(_.id)
   val pk = primaryKey("pass_in_trip_pk", (tripId, passId, date))
-  def * =(tripId, passId, date, place) <> (PassInTrip.apply _ tupled, PassInTrip.unapply)
+  def * =(tripId,  date, passId, place) <> (PassInTrip.apply _ tupled, PassInTrip.unapply)
 }
 
 object PassInTripTable {

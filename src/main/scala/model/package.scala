@@ -8,6 +8,7 @@ import slick.ast.BaseTypedType
 import slick.jdbc.JdbcType
 import slick.jdbc.PostgresProfile.api._
 
+
 package object model {
   implicit val DateToTimestamp: JdbcType[Date] with BaseTypedType[Date] =
     MappedColumnType.base[Date, Timestamp](d => new Timestamp(d.getTime()),

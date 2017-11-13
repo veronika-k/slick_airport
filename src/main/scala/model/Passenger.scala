@@ -13,7 +13,7 @@ case class Passenger (id: Option[Int],
                      )
 
 class PassengerTable(tag:Tag) extends Table[Passenger](tag, "passengers"){
-  val id = column[Int]("id_psg", O.PrimaryKey, O.AutoInc)
+  val id = column[Int]("id_psg", O.PrimaryKey)
   val name = column[String]("name")
   def * =(id.?,  name) <> (Passenger.apply _ tupled, Passenger.unapply)
 }

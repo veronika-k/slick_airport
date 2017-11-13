@@ -10,9 +10,13 @@ import scala.concurrent.Future
 case class Company (id: Option[Int],
                     name: String
                    )
+//object a {
+//  val a = (Company.apply _) tupled ((1,"ewew"))
+//}
+
 
 class CompanyTable(tag:Tag) extends Table[Company](tag, "companies"){
-val id = column[Int]("id", O.PrimaryKey, O.AutoInc)
+val id = column[Int]("id", O.PrimaryKey)
 val name = column[String]("name")
 def * =(id.?,  name) <> (Company.apply _ tupled, Company.unapply)
 }
