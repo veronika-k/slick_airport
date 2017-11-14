@@ -23,6 +23,7 @@ object PassengerTable {
 }
 
 class PassengerRepository(db:Database){
+  val table =TableQuery[PassengerTable]
   def create(passenger: Passenger): Future[Passenger] =
     db.run(PassengerTable.table returning PassengerTable.table += passenger)
 

@@ -26,6 +26,7 @@ object CompanyTable {
 }
 
 class CompanyRepository(db:Database){
+  val table =TableQuery[CompanyTable]
   def create(company: Company): Future[Company] =
     db.run(CompanyTable.table returning CompanyTable.table += company)
   def update (company: Company): Future[Int] =

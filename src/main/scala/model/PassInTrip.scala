@@ -26,6 +26,7 @@ object PassInTripTable {
 }
 
 class PassInTripRepository(db:Database){
+  val table = TableQuery[PassInTripTable]
   def create(passInTrip: PassInTrip): Future[PassInTrip] =
     db.run(PassInTripTable.table returning PassInTripTable.table += passInTrip)
 
