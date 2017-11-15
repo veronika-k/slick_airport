@@ -125,7 +125,7 @@ object Main extends App {
   //    map{case (size, group) => (group, group.map(_._3).max)}.
 
 
-  select77()
+  //select77()
   def select77(): Unit = {
     val query = tripRepository.table.
       filter(_.townFrom === "Rostov").
@@ -178,18 +178,40 @@ object Main extends App {
     exec(query.result).foreach(println)
   }
 
-//  def select102(): Unit = {
-//    val passInTripRoute = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
-//      map{case (pit, t) => (t.townFrom, t.townTo, pit.passId)}
-//
-//    val passInTripCountRouts = passInTripRoute.map{case (tt,tf,p)=>(tf,tt,p)}.
-//      join(passInTripRoute).on{case (pt, ptr)}
-//
-//    val query = passInTripCountRouts
-//    exec(query.result).foreach(println)
-//  }
+  //select102()
+  def select102(): Unit = {
+    val tripRoutes = tripRepository.table.map{
+      f => (f.id, Case If (f.townTo < f.townFrom) Then f.townTo Else f.townFrom,
+        Case If (f.townTo < f.townFrom) Then f.townFrom Else f.townTo)
+    }
 
+    val passInTripRoute = tripRoutes.join(passInTripRepository.table).on(_._1 === _.tripId).
+      map{case (tr, pit) => (tr._2, tr._3, pit.passId)}.
+      join(passengerRepository.table).on(_._3 === _.id).
+      map{case (tr, p) => ( p.name, tr._1, tr._2)}.
+      groupBy{case (passname,town1, town2) => passname}.
+      map{ case (passname, group) => (passname, group.map(_._2).countDistinct,group.map(_._3).countDistinct)}.
+      filter{s => (s._2 === 1) &&(s._3 === 1)}
 
+    exec(passInTripRoute.result).foreach(println)
+  }
+
+  select103()
+  def select103(): Unit = {
+    val tripMax = tripRepository.table.sortBy(_.id.desc).take(3).map(_.id)
+    val tripMin = tripRepository.table.sortBy(_.id.asc).take(3).map(_.id)
+    val query = tripMin.take(1).join(tripMin.drop(1).take(1)).
+      join(tripMin.drop(2).take(1)).map{case (s1,s2) => (s1._1, s1._2, s2)}.
+      join(tripMax.drop(2).take(1)).map{case (s1,s2) => (s1._1, s1._2, s1._3,s2)}.
+      join(tripMax.drop(1).take(1)).map{case (s1,s2) => (s1._1, s1._2, s1._3,s1._4, s2)}.
+      join(tripMax.take(1)).map{case (s1,s2) => (s1._1, s1._2, s1._3,s1._4, s1._5, s2)}
+
+//      exec(tripMax.result).foreach(println)
+//      exec(tripMin.result).foreach(println)
+      println(exec(query.result))
+  }
 }
+
+
 
 
