@@ -3,10 +3,13 @@
   */
 import model._
 import slick.jdbc.PostgresProfile.api._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import java.util.Date
 import java.sql.{Date, Time, Timestamp}
+import java.text.SimpleDateFormat
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import com.github.tminglei.slickpg._
 
@@ -196,7 +199,7 @@ object Main extends App {
     exec(passInTripRoute.result).foreach(println)
   }
 
-  select103()
+  //select103()
   def select103(): Unit = {
     val tripMax = tripRepository.table.sortBy(_.id.desc).take(3).map(_.id)
     val tripMin = tripRepository.table.sortBy(_.id.asc).take(3).map(_.id)
@@ -209,6 +212,24 @@ object Main extends App {
 //      exec(tripMax.result).foreach(println)
 //      exec(tripMin.result).foreach(println)
       println(exec(query.result))
+  }
+
+  select107()
+  def select107(): Unit = {
+    val format1 = new SimpleDateFormat("yyyyMMdd HH:mm:ss").parse("20030401 00:00:00")
+    val date1 = new java.sql.Date (format1.getTime)
+    val format2 = new SimpleDateFormat("yyyyMMdd HH:mm:ss").parse("20030501 00:00:00")
+    val date2 = new java.sql.Date (format2.getTime)
+
+    val queryRepos = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
+      join(companyRepository.table).on{case ((pit, t), c) => t.companyId === c.id}.
+      map{case ((pit, t), c) => (t.townFrom, c.name, pit.tripId, pit.date, pit.passId)}.
+      filter{s => s._1 === "Rostov"}.
+      filter{s => s._4.asColumnOf[java.sql.Date] > date1 && s._4.asColumnOf[java.sql.Date] < date2}.
+      sortBy{s => s._4.desc}.drop(4).take(1).
+      map{s => (s._2, s._3, s._4)}
+
+    exec(queryRepos.result).foreach(println)
   }
 }
 
