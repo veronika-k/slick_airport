@@ -351,7 +351,22 @@ object Main extends App {
 
     exec(query.result).foreach(println)
   }
+  select124()
+  def select124() :Unit ={
+    val multyPass = passInTripRepository.table.
+      join(passengerRepository.table).on(_.passId === _.id).
+      join(tripRepository.table).on{case ((pit, p), t) => pit.tripId === t.id}.
+      map{case ((pit, pas), t) => (pit.passId, t.companyId, pit.tripId, pas.name)}.
+      groupBy { case (passId, comp, trip, passName) => (passId, passName, comp)}.
+      map { case ((passId, passName, comp), group) =>(passId, passName, comp, group.size)}
 
+    val hz = multyPass.join(multyPass).on{case (mp1, mp2) => (mp1._1 === mp2._1 && mp1._4 === mp2._4)}.
+      map{case (mp1, mp2) => (mp1._2, mp1._3, mp2._3,mp2._4)}.
+      filter{case (name, com1,com2,num) => com1 =!= com2}.
+      map{case (name, com1,com2,num) => name}.distinct
+    val query = multyPass
+    exec(hz.result).foreach(println)
+  }
 
 }
 
