@@ -4,21 +4,14 @@
 import model._
 import slick.jdbc.PostgresProfile.api._
 
-import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import java.util.Date
-import java.sql.{Date, Time, Timestamp}
+
 import java.text.SimpleDateFormat
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import com.github.tminglei.slickpg._
-import slick.lifted.QueryBase
-
-import scala.{None, Option}
 
 object Main extends App {
-  val db = slickProfile.api.Database.forURL(Config.url)
+  val db = slickProfile.api.Database.forURL("jdbc:postgresql://localhost/airport?user=inoquea&password=11111111")
   val companyRepository = new CompanyRepository(db)
   val passengerRepository = new PassengerRepository(db)
   val tripRepository = new TripRepository(db)
