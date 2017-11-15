@@ -127,10 +127,12 @@ object Main extends App {
 
   select77()
   def select77(): Unit = {
-    val dayGroupBy = new java.text.SimpleDateFormat("MM/dd/yyyy")
     val query = tripRepository.table.
       filter(_.townFrom === "Rostov").
-    groupBy(l => dayGroupBy.format(l.timeOut.asColumnOf[java.sql.Date]))
+      join(passInTripRepository.table).on(_.id === _.tripId).
+      map{case (t,pit) => (pit.tripId, pit.date)}.
+      groupBy{case (id,date) => date.asColumnOf[java.sql.Date]}.
+      map{case (date,group) => (date,group.size)}
     exec(query.result).foreach(println)
   }
 
@@ -145,7 +147,6 @@ object Main extends App {
         pass, group.map(_._2).countDistinct, group.map(_._3).size, group.map(_._2).max, group.map(_._4).max)
       }.
       filter{ case (pass, compNum, tripNum, comp, name) => compNum === 1}.map(t=> (t._1,t._3,t._4,t._5))
-
 
     val max_time = singlPass.map(_._2).max
 
@@ -182,7 +183,7 @@ object Main extends App {
 //      map{case (pit, t) => (t.townFrom, t.townTo, pit.passId)}
 //
 //    val passInTripCountRouts = passInTripRoute.map{case (tt,tf,p)=>(tf,tt,p)}.
-//      filter{case (tf,tt,p) => (tf,tt,p) inSet passInTripRoute}
+//      join(passInTripRoute).on{case (pt, ptr)}
 //
 //    val query = passInTripCountRouts
 //    exec(query.result).foreach(println)
