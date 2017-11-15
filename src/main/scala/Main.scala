@@ -124,16 +124,71 @@ object Main extends App {
   //  groupBy{ case t => t._3}.
   //    map{case (size, group) => (group, group.map(_._3).max)}.
 
-  //select5()
 
+  select77()
   def select77(): Unit = {
+    val dayGroupBy = new java.text.SimpleDateFormat("MM/dd/yyyy")
     val query = tripRepository.table.
       filter(_.townFrom === "Rostov").
-      map(_.timeOut.asColumnOf[Timestamp])
+    groupBy(l => dayGroupBy.format(l.timeOut.asColumnOf[java.sql.Date]))
     exec(query.result).foreach(println)
   }
-  def select88() :Unit ={
 
+  //select88()
+  def select88() :Unit ={
+    val singlPass = passInTripRepository.table.
+      join(passengerRepository.table).on(_.passId === _.id).
+      join(tripRepository.table).on{case ((pit, p), t) => pit.tripId === t.id}.
+      map{case ((pit, pas), t) => (pit.passId, t.companyId, pit.tripId, pas.name)}.
+      groupBy { case (pass, comp, trip, name) => pass}.
+      map { case (pass, group) => (
+        pass, group.map(_._2).countDistinct, group.map(_._3).size, group.map(_._2).max, group.map(_._4).max)
+      }.
+      filter{ case (pass, compNum, tripNum, comp, name) => compNum === 1}.map(t=> (t._1,t._3,t._4,t._5))
+
+
+    val max_time = singlPass.map(_._2).max
+
+    val query = singlPass.join(companyRepository.table).on(_._3 === _.id).
+      map{case(spass, comp) => (spass._4, spass._2, comp.name)}.
+      filter{case(pass, tripN, comp) => tripN === max_time}
+
+      exec(query.result).foreach(println)
   }
 
+
+  //select95()
+  def select95() :Unit ={
+    val queryRepos = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
+      map{case (pit, t) => (t.companyId, pit.tripId, t.plane, pit.passId)}
+
+    val queryCompId = queryRepos.
+      groupBy{case (comp,trip,plane,pass) => comp}.
+      map{case (comp, group) => (
+        comp, group.map(_._2).size,
+        group.map(_._3).countDistinct,
+        group.map(_._4).countDistinct,
+        group.map(_._3).size
+      )
+      }
+    val query = queryCompId.join(companyRepository.table).on(_._1 === _.id).
+      map{case (q, c) => (c.name,q._2,q._3, q._4, q._5)}
+
+    exec(query.result).foreach(println)
+  }
+
+//  def select102(): Unit = {
+//    val passInTripRoute = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
+//      map{case (pit, t) => (t.townFrom, t.townTo, pit.passId)}
+//
+//    val passInTripCountRouts = passInTripRoute.map{case (tt,tf,p)=>(tf,tt,p)}.
+//      filter{case (tf,tt,p) => (tf,tt,p) inSet passInTripRoute}
+//
+//    val query = passInTripCountRouts
+//    exec(query.result).foreach(println)
+//  }
+
+
 }
+
+

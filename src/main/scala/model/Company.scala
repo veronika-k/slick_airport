@@ -10,9 +10,6 @@ import scala.concurrent.Future
 case class Company (id: Option[Int],
                     name: String
                    )
-//object a {
-//  val a = (Company.apply _) tupled ((1,"ewew"))
-//}
 
 
 class CompanyTable(tag:Tag) extends Table[Company](tag, "companies"){
