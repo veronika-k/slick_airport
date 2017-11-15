@@ -4,6 +4,7 @@
 import model._
 import slick.jdbc.PostgresProfile.api._
 
+import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import java.util.Date
@@ -12,6 +13,9 @@ import java.text.SimpleDateFormat
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import com.github.tminglei.slickpg._
+import slick.lifted.QueryBase
+
+import scala.{None, Option}
 
 object Main extends App {
   val db = slickProfile.api.Database.forURL(Config.url)
@@ -50,7 +54,7 @@ object Main extends App {
   def exec[T](action: DBIO[T]): T =
     Await.result(db.run(action), 10.seconds)
 
-  //select1()
+  //select63()
   def select63(): Unit = {
     val query = passInTripRepository.table.join(passengerRepository.table).on(_.passId === _.id).
       groupBy { case (pit, p) => (pit.place, pit.passId, p.name) }.
@@ -59,7 +63,7 @@ object Main extends App {
     exec(query).foreach(println)
   }
 
-  //select2()
+  //select67()
   def select67(): Unit = {
 
     val max_size = tripRepository.table.
@@ -76,7 +80,7 @@ object Main extends App {
     println(exec(query))
   }
 
-  //select3()
+  //select68()
   def select68(): Unit = {
     val q = (tripRepository.table.map(t => (t.id, t.townFrom, t.townTo)) unionAll
       tripRepository.table.map(t => (t.id, t.townTo, t.townFrom))).
@@ -93,7 +97,7 @@ object Main extends App {
     println(exec(query) / 2)
   }
 
-  //select4()
+  //select72()
 
   def select72(): Unit = {
     val passAndComp = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
@@ -101,16 +105,9 @@ object Main extends App {
       map { case ((passId, companyId), group) => (passId, companyId, group.size) }
 
     val companyPassMax = passAndComp.
-      //map{case (passId, companyId, s) => (companyId, s)}.
-      //groupBy{case pac => pac._1}.
-      //map{case (companyId, group) => (companyId, group.map(_._2).max)}
       map { case (passId, companyId, s) => s }.
       groupBy { _ => true }.
       map { case (_, group) => group.max }
-
-    //    val passIdWithMax = passAndComp.join(companyPassMax).on(_._2 === _._1).
-    //      filter{case (pac,cpm) => pac._3 === cpm._2}.
-    //      map{case (pac,cpm) => (pac._1, pac._3)}
 
     val passIdWithMax = passAndComp.
       filter { case pac => pac._3 in companyPassMax }.
@@ -123,9 +120,6 @@ object Main extends App {
     exec(passNames.result).foreach(println)
   }
 
-  //exec(clearQuery.result).foreach(println)
-  //  groupBy{ case t => t._3}.
-  //    map{case (size, group) => (group, group.map(_._3).max)}.
 
 
   //select77()
@@ -209,12 +203,10 @@ object Main extends App {
       join(tripMax.drop(1).take(1)).map{case (s1,s2) => (s1._1, s1._2, s1._3,s1._4, s2)}.
       join(tripMax.take(1)).map{case (s1,s2) => (s1._1, s1._2, s1._3,s1._4, s1._5, s2)}
 
-//      exec(tripMax.result).foreach(println)
-//      exec(tripMin.result).foreach(println)
       println(exec(query.result))
   }
 
-  select107()
+  //select107()
   def select107(): Unit = {
     val format1 = new SimpleDateFormat("yyyyMMdd HH:mm:ss").parse("20030401 00:00:00")
     val date1 = new java.sql.Date (format1.getTime)
@@ -230,6 +222,48 @@ object Main extends App {
       map{s => (s._2, s._3, s._4)}
 
     exec(queryRepos.result).foreach(println)
+  }
+
+  select84()
+  def select84(): Unit = {
+    val format = new SimpleDateFormat("yyyyMMdd HH:mm:ss")
+    val date1 = new java.sql.Date (format.parse("20030401 00:00:00").getTime)
+    val date2 = new java.sql.Date (format.parse("20030411 00:00:00").getTime)
+    val date3 = new java.sql.Date (format.parse("20030421 00:00:00").getTime)
+    val date4 = new java.sql.Date (format.parse("20030501 00:00:00").getTime)
+    println(date1, date2,date3,date4)
+
+    val queryRepos = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
+      join(companyRepository.table).on{case ((pit, t), c) => t.companyId === c.id}.
+      map{case ((pit, t), c) => (c.name, pit.date, pit.passId)}
+
+    val query1 = queryRepos.
+        filter{s => s._2.asColumnOf[java.sql.Date] >= date1 && s._2.asColumnOf[java.sql.Date] < date2}.
+        groupBy{case (comp,date,pass) => comp}.
+        map{case (comp,group) => (comp, group.size)}
+
+    val query2 =queryRepos.
+      filter{s => s._2.asColumnOf[java.sql.Date] >= date2 && s._2.asColumnOf[java.sql.Date] < date3}.
+      groupBy{case (comp,date,pass) => comp}.
+      map{case (comp,group) => (comp, group.size)}
+
+    val query3 =queryRepos.
+      filter{s => s._2.asColumnOf[java.sql.Date] >= date3 && s._2.asColumnOf[java.sql.Date] < date4}.
+      groupBy{case (comp,date,pass) => comp}.
+      map{case (comp,group) => (comp, group.size)}
+
+    val query1per = for {(e, p) <- companyRepository.table.map(_.name).
+      joinLeft(query1).on(_ === _._1) } yield (e, p.map(_._2))
+
+    val query12per = for {
+      (e, p) <- query1per.joinLeft(query2).on(_._1 === _._1)} yield
+      (e._1, e._2, p.map(_._2))
+
+    val query123period = for {
+      (e, p) <- query12per.joinLeft(query3).on(_._1 === _._1)} yield
+      (e._1, e._2, e._3, p.map(_._2))
+
+    exec(query123period.result).foreach(println)
   }
 }
 
