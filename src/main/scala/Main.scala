@@ -224,7 +224,7 @@ object Main extends App {
     exec(queryRepos.result).foreach(println)
   }
 
-  select84()
+  //select84()
   def select84(): Unit = {
     val format = new SimpleDateFormat("yyyyMMdd HH:mm:ss")
     val date1 = new java.sql.Date (format.parse("20030401 00:00:00").getTime)
@@ -264,6 +264,23 @@ object Main extends App {
       (e._1, e._2, e._3, p.map(_._2))
 
     exec(query123period.result).foreach(println)
+  }
+
+  //select114()
+  def select114(): Unit = {
+    val queryRepos = passInTripRepository.table.join(passengerRepository.table).on(_.passId === _.id).
+      map{case (pit,p) => (p.name, pit.place)}.
+      groupBy{case (name, place) => (name, place)}.
+      map{case ((name,place), group) => (name, group.size)}
+
+    val maxSize = queryRepos.map(_._2).
+      groupBy { _ => true }.
+      map { case (_, group) => group.max }
+
+    val query = queryRepos.
+      filter{case (name, times) => times in maxSize}
+
+    exec(query.result).foreach(println)
   }
 }
 
