@@ -300,7 +300,7 @@ object Main extends App {
     exec(queryRepos.result).foreach(println)
   }
 
-  select87()
+  //select87()
   def select87(): Unit = {
   val queryRepo = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
     join(passengerRepository.table).on{case ((pit, t), p) => pit.passId === p.id}.
@@ -323,6 +323,36 @@ object Main extends App {
 
     exec(query.result).foreach(println)
   }
+
+  //select122()
+  def select122(): Unit = {
+    val queryRepo = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
+      join(passengerRepository.table).on{case ((pit, t), p) => pit.passId === p.id}.
+      map{case ((pit, t), p) => (p.id, p.name, pit.date, t.townFrom, t.townTo)}
+
+    val passIdBornTown = queryRepo.
+      groupBy{case (pId, name, date,tf,tt) => pId}.
+      map{case (pId, group) => (pId, group.map(_._3).min)}.
+      join(queryRepo).on(_._2 === _._3).
+      map{case (firstTrip, trips) => ( trips._1, trips._4)}.distinct.
+      distinctOn{case (id, town) => id}
+
+    val passIdLastTown = queryRepo.
+      groupBy{case (pId, name, date,tf,tt) => pId}.
+      map{case (pId, group) => (pId, group.map(_._3).max)}.
+      join(queryRepo).on{case (pl, qr) => (pl._1 === qr._1)&&(pl._2 === qr._3)}.
+      map{case (lastTrip, trips) => ( trips._1, trips._2, trips._5)}.distinct.
+      distinctOn{case (id, name,town) => id}
+
+    val query = passIdLastTown.
+      join(passIdBornTown).on(_._1 === _._1).
+      map{case (lastTrip, bornTown) => (lastTrip._2, bornTown._2, lastTrip._3)}.
+      filter{case (name, bornTown, lastTown) => bornTown =!= lastTown}
+
+    exec(query.result).foreach(println)
+  }
+
+
 }
 
 
