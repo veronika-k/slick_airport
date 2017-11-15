@@ -344,7 +344,7 @@ object Main extends App {
 
     exec(query.result).foreach(println)
   }
-  select124()
+  //select124()
   def select124() :Unit ={
     val multyPass = passInTripRepository.table.
       join(passengerRepository.table).on(_.passId === _.id).
