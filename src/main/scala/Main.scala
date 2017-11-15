@@ -231,7 +231,6 @@ object Main extends App {
     val date2 = new java.sql.Date (format.parse("20030411 00:00:00").getTime)
     val date3 = new java.sql.Date (format.parse("20030421 00:00:00").getTime)
     val date4 = new java.sql.Date (format.parse("20030501 00:00:00").getTime)
-    println(date1, date2,date3,date4)
 
     val queryRepos = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
       join(companyRepository.table).on{case ((pit, t), c) => t.companyId === c.id}.
@@ -257,11 +256,11 @@ object Main extends App {
 
     val query12per = for {
       (e, p) <- query1per.joinLeft(query2).on(_._1 === _._1)} yield
-      (e._1, e._2, p.map(_._2))
+      (e._1, e._2.getOrElse(0), p.map(_._2))
 
     val query123period = for {
       (e, p) <- query12per.joinLeft(query3).on(_._1 === _._1)} yield
-      (e._1, e._2, e._3, p.map(_._2))
+      (e._1, e._2, e._3.getOrElse(0), p.map(_._2).getOrElse(0))
 
     exec(query123period.result).foreach(println)
   }
@@ -279,6 +278,48 @@ object Main extends App {
 
     val query = queryRepos.
       filter{case (name, times) => times in maxSize}
+
+    exec(query.result).foreach(println)
+  }
+
+  //select66()
+  def select66(): Unit = {
+    val format1 = new SimpleDateFormat("yyyyMMdd HH:mm:ss").parse("20030401 00:00:00")
+    val date1 = new java.sql.Date (format1.getTime)
+    val format2 = new SimpleDateFormat("yyyyMMdd HH:mm:ss").parse("20030407 00:00:00")
+    val date2 = new java.sql.Date (format2.getTime)
+
+    val queryRepos = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
+      map{case (pit, t) => (t.townFrom, pit.tripId, pit.date)}.
+      filter{s => s._1 === "Rostov"}.
+      map{ t => (t._2, t._3)}.
+      filter{s => s._2.asColumnOf[java.sql.Date] >= date1 && s._2.asColumnOf[java.sql.Date] <= date2}.
+      groupBy{case (t,d) => d.asColumnOf[java.sql.Date]}.
+      map{case (d, group) => (d,group.size)}
+
+    exec(queryRepos.result).foreach(println)
+  }
+
+  select87()
+  def select87(): Unit = {
+  val queryRepo = passInTripRepository.table.join(tripRepository.table).on(_.tripId === _.id).
+    join(passengerRepository.table).on{case ((pit, t), p) => pit.passId === p.id}.
+    map{case ((pit, t), p) => (p.id, p.name, pit.date, t.townFrom, t.townTo)}
+
+    val passIdNotMoscowian = queryRepo.
+      groupBy{case (pId, name, date,tf,tt) => pId}.
+      map{case (pId, group) => (pId, group.map(_._3).min)}.
+      join(queryRepo).on(_._2 === _._3).
+      map{case (firstTrip, trips) => ( trips._1, trips._4)}.distinct.
+      filter{case (id, bornTown) => bornTown =!= "Moscow"}.
+      map(_._1)
+
+    val query = queryRepo.
+      filter{case (pId, name, date,tf,tt) => tt === "Moscow" && pId.in(passIdNotMoscowian)}.
+      map{case (pId, name, date,tf,tt) => (name, tt)}.
+      groupBy { case (name, tt) => name}.
+      map{case (name, group) => (name, group.size)}.
+      filter{case (name, num) => num > 1}
 
     exec(query.result).foreach(println)
   }
