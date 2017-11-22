@@ -3,11 +3,15 @@
   */
 import model._
 import slick.jdbc.PostgresProfile.api._
-
+import scala.util.Success
+import scala.util.Failure
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
+import scala.concurrent.ExecutionContext.Implicits.global
 import java.text.SimpleDateFormat
+import scala.concurrent.Future
+
+import com.sun.net.httpserver.Authenticator.{Failure, Success}
 
 
 object Main extends App {
@@ -56,7 +60,7 @@ object Main extends App {
     exec(query).foreach(println)
   }
 
-  //select67()
+  select67()
   def select67(): Unit = {
 
     val max_size = tripRepository.table.
@@ -70,9 +74,12 @@ object Main extends App {
       map { case ((townFrom, townTo), group) => (townFrom, townTo, group.size) }.
       filter { case (townFrom, townTo, size) => size in max_size }.length.result
 
-    println(exec(query))
+    val  f = db.run(query).onComplete{case scala.util.Success(res) => println(res)
+    case scala.util.Failure(t: Throwable) => println("fail")
+    }
+    println("done")
   }
-
+  System.in.read()
   //select68()
   def select68(): Unit = {
     val q = (tripRepository.table.map(t => (t.id, t.townFrom, t.townTo)) unionAll
